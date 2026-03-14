@@ -16,23 +16,27 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Set up dependencies
+    - name: Install DevKitPro and libnx
       run: |
         sudo apt-get update
-        # Install DevKitPro and libnx dependencies
         sudo apt-get install -y git cmake build-essential
-
-        # Set up DevKitPro
-        curl -L https://git.io/JT055 | bash
         
-        # Add DevKitPro to PATH
-        echo 'export PATH=/opt/devkitpro/bin:$PATH' >> $GITHUB_ENV
+        # Install DevKitPro
+        export DEVKITPRO=/opt/devkitpro
+        sudo mkdir -p $DEVKITPRO
+        sudo git clone --recursive https://github.com/devkitPro/pacman.git $DEVKITPRO/pacman
+        cd $DEVKITPRO/pacman
+        sudo make install
+        
+        # Add to PATH for next steps
+        echo "DEVKITPRO=$DEVKITPRO" >> $GITHUB_ENV
+        echo "$DEVKITPRO/bin" >> $GITHUB_PATH
 
     - name: Build Dolphin
       run: |
         mkdir build
         cd build
-        cmake -DCMAKE_TOOLCHAIN_FILE=/opt/devkitpro/libnx/etc/cmake/Toolchain-nx.cmake ..
+        aarch64-none-elf-cmake -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake ..
         make -j$(nproc)
 
     - name: Upload build artifacts
