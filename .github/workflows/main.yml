@@ -1,0 +1,42 @@
+name: Build Dolphin Emulator for Switch
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up dependencies
+      run: |
+        sudo apt-get update
+        # Install DevKitPro and libnx dependencies
+        sudo apt-get install -y git cmake build-essential
+
+        # Set up DevKitPro
+        curl -L https://git.io/JT055 | bash
+        
+        # Add DevKitPro to PATH
+        echo 'export PATH=/opt/devkitpro/bin:$PATH' >> $GITHUB_ENV
+
+    - name: Build Dolphin
+      run: |
+        mkdir build
+        cd build
+        cmake -DCMAKE_TOOLCHAIN_FILE=/opt/devkitpro/libnx/etc/cmake/Toolchain-nx.cmake ..
+        make -j$(nproc)
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: dolphin-switch-build
+        path: build/
